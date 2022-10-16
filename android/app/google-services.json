@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "652945379956",
+    "project_id": "rnosrdxclean",
+    "storage_bucket": "rnosrdxclean.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:652945379956:android:4b8e41e83eb99c7cb43721",
+        "android_client_info": {
+          "package_name": "com.rnosrdxclean"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "652945379956-oguev9cbr4efgh9caikjpicl1jtmuhle.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6_zaLdW8FbeD6nZ8lbrgQKeyEu_49VQs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "652945379956-oguev9cbr4efgh9caikjpicl1jtmuhle.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

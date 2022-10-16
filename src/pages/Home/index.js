@@ -2,9 +2,9 @@ import {StyleSheet, Text, View, Image, TouchableOpacity} from 'react-native';
 import React, {useEffect, useState} from 'react';
 import MapboxGL from '@rnmapbox/maps';
 import Geolocation from 'react-native-geolocation-service';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
-import {Button, TextInput} from 'react-native-paper';
+import {Button} from 'react-native-paper';
 import {Gap} from '../../components';
 import {ICPoint} from '../../assets';
 import notifee, {
@@ -12,26 +12,37 @@ import notifee, {
   AndroidImportance,
   EventType,
 } from '@notifee/react-native';
+import {colors} from '../../utils';
+import {useSelector} from 'react-redux';
+import {useIsFocused} from '@react-navigation/native';
 
 let TOKEN =
   'sk.eyJ1Ijoic2FsaW1zZWEiLCJhIjoiY2w5YWkxMDh4MGpubzNwcXQ3djZtNWh6ZCJ9.eX-5i80byvpA4mNgMBbXzg';
 MapboxGL.setAccessToken(TOKEN);
-const Home = ({navigation}) => {
+
+const Home = ({navigation, route}) => {
   const [corcenStart, setCorcenStart] = useState([
     106.80024559462458, -6.5305088365218324,
   ]);
-  const [corcenDest, setCorcenDest] = useState([106.7877425, -6.5931576]);
   const [titikCenter, setTitikCenter] = useState([
     106.80024559462458, -6.5305088365218324,
   ]);
   const [zoomCam, setZoomCam] = useState(16);
-  const [route, setRoute] = useState({
+  const [routeShape, setRouteShape] = useState({
     route: {
       type: 'FeatureCollection',
       features: [],
     },
   });
   const [startDriving, setStartDriving] = useState(false);
+  const {formGlobal} = useSelector(state => state.globalReducer);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (formGlobal?.NamaDest) {
+      btnDirection(corcenStart, formGlobal?.LatlonDest, false);
+    }
+  }, [isFocused]);
 
   useEffect(() => {
     Geolocation.getCurrentPosition(location => {
@@ -69,19 +80,17 @@ const Home = ({navigation}) => {
                 pressAction: {id: 'stopGps'},
               },
             ],
+            pressAction: {
+              id: 'default',
+              mainComponent: 'App',
+            },
           },
         });
-
-        // setCorcenStart([
-        //   location?.coords?.longitude,
-        //   location?.coords?.latitude,
-        // ]);
       },
       err => {
         console.log(err);
       },
       {
-        // interval: 30000,
         maximumAge: 3600000,
       },
     );
@@ -99,60 +108,50 @@ const Home = ({navigation}) => {
             ]);
             btnDirection(
               [location?.coords?.longitude, location?.coords?.latitude],
-              [corcenDest[0], corcenDest[1]],
+              [formGlobal.LatlonDest[0], formGlobal.LatlonDest[1]],
+              true,
             );
           },
           err => {
             console.log(err);
           },
           {
-            // interval: 30000,
             maximumAge: 3600000,
           },
         );
       }, 2000);
 
       return () => clearInterval(interval);
+    } else {
+      return () => clearInterval();
     }
   }, [startDriving]);
 
   const btnStart = () => {
-    // console.log(setStartDriving);
+    if (!formGlobal?.NamaDest) {
+      alert('Pilih lokasi tujuan kamu dulu ya');
+      return;
+    }
     setStartDriving(true);
-    // Geolocation.watchPosition(
-    //   location => {
-    //     setCorcenStart([location?.coords?.longitude, location?.coords?.latitude]);
-    //     console.log(location?.coords.latitude);
-    //     setInterval(() => {
-    //       btnDirection();
-    //       console.log('woi');
-    //     }, 5000);
-    //   },
-    //   err => {
-    //     console.log(err);
-    //   },
-    //   {
-    //     interval: 30000,
-    //   },
-    // );
   };
 
   const btnStop = async () => {
     setStartDriving(false);
     await notifee.stopForegroundService();
-    setRoute({
-      route: {
-        type: 'FeatureCollection',
-        features: [],
-      },
-    });
+    // setRouteShape({
+    //   route: {
+    //     type: 'FeatureCollection',
+    //     features: [],
+    //   },
+    // });
+    btnDirection(corcenStart, formGlobal?.LatlonDest, false);
   };
 
-  const btnDirection = (startLoc, destLoc) => {
+  const btnDirection = (startLoc, destLoc, isRun = false) => {
     var URL = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${startLoc[0]},${startLoc[1]};${destLoc[0]},${destLoc[1]}?annotations=maxspeed&overview=full&geometries=geojson&access_token=${TOKEN}`;
     axios.get(URL).then(res => {
       let data = res.data;
-      setRoute({
+      setRouteShape({
         route: {
           type: 'FeatureCollection',
           features: [
@@ -167,134 +166,154 @@ const Home = ({navigation}) => {
           ],
         },
       });
-      setTitikCenter(FUNCKorCen([startLoc, destLoc]));
-      FUNCZoomCam(data.routes[0].distance);
+      if (!isRun) setTitikCenter(FUNCKorCen([startLoc, destLoc]));
+      if (isRun) setTitikCenter(startLoc);
+      FUNCZoomCam(data.routes[0].distance, isRun && 2);
     });
   };
 
   const FUNCKorCen = coord => {
     var result = coord.reduce(
       function (x, y) {
-        return [x[0] + y[0] / coord.length, x[1] + y[1] / coord.length];
+        return [
+          x[0] - 0.0002 + y[0] / coord.length,
+          x[1] + y[1] / coord.length,
+        ];
       },
-      [0, 0],
+      [0.000021, -0.001],
+      // [0, 0],
     );
     return result;
   };
-  const FUNCZoomCam = distance => {
-    // console.log('distance', distance);
-    if (distance >= 78271.484) {
-      setZoomCam(8);
+  const FUNCZoomCam = (distance, toleran = 0) => {
+    console.log('distance', distance);
+    if (distance >= 1234392.25) {
+      setZoomCam(4 + (toleran != 0 && toleran + 13));
       // console.log('0');
       return;
     }
+    if (distance >= 188386.109) {
+      setZoomCam(6 + (toleran != 0 && toleran + 9));
+      // console.log('0');
+      return;
+    }
+    if (distance >= 78271.484) {
+      setZoomCam(8 + (toleran != 0 && toleran + 9));
+      // console.log('0');
+      return;
+    }
+    // if (distance >= 64000.742) {
+    //   setZoomCam(10 + (toleran != 0 && toleran + 7));
+    //   // console.log('1');
+    //   return;
+    // }
     if (distance >= 39135.742) {
-      setZoomCam(9);
+      setZoomCam(9 + (toleran != 0 && toleran + 8));
       // console.log('1');
       return;
     }
     if (distance >= 19567.871) {
-      setZoomCam(10);
+      setZoomCam(10 + (toleran != 0 && toleran + 7));
       // console.log('2');
       return;
     }
     if (distance >= 9783.936) {
-      setZoomCam(11);
+      setZoomCam(11 + (toleran != 0 && toleran + 6));
       // console.log('3');
       return;
     }
     if (distance >= 4891.968) {
-      setZoomCam(12);
+      setZoomCam(12 + (toleran != 0 && toleran + 5));
       // console.log('4');
       return;
     }
     if (distance >= 2445.984) {
-      setZoomCam(13);
+      setZoomCam(13 + toleran);
       // console.log('5');
       return;
     }
     if (distance >= 1222.992) {
-      setZoomCam(14);
+      setZoomCam(14 + toleran);
       // console.log('6');
       return;
     }
     if (distance >= 611.496) {
-      setZoomCam(15);
+      setZoomCam(15 + toleran);
       // console.log('7');
       return;
     }
     if (distance >= 305.748) {
-      setZoomCam(16);
+      setZoomCam(16 + toleran);
       // console.log('8');
       return;
     }
     if (distance >= 152.874) {
-      setZoomCam(17);
+      setZoomCam(17 + toleran);
       // console.log('9');
       return;
     }
     if (distance >= 76.437) {
-      setZoomCam(18);
+      setZoomCam(18 + toleran);
       // console.log('10');
       return;
     }
     if (distance >= 38.218) {
-      setZoomCam(19);
+      setZoomCam(19 + toleran);
       // console.log('11');
       return;
     }
     if (distance >= 19.109) {
-      setZoomCam(20);
+      setZoomCam(20 + toleran);
       // console.log('12');
       return;
     }
     if (distance >= 9.555) {
-      setZoomCam(20);
+      setZoomCam(20 + toleran);
       // console.log('13');
       return;
     }
     if (distance >= 4.777) {
-      setZoomCam(20);
+      setZoomCam(20 + toleran);
       // console.log('14');
       return;
     }
     if (distance >= 2.389) {
-      setZoomCam(15);
+      setZoomCam(15 + toleran);
       // console.log('15');
       return;
     }
     if (distance >= 1.194) {
-      setZoomCam(23);
+      setZoomCam(23 + toleran);
       // console.log('16');
       return;
     }
     if (distance >= 0.597) {
-      setZoomCam(17);
+      setZoomCam(17 + toleran);
       // console.log('17');
       return;
     }
     if (distance >= 0.299) {
-      setZoomCam(18);
+      setZoomCam(18 + toleran);
       // console.log('18');
       return;
     }
     if (distance >= 0.149) {
-      setZoomCam(19);
+      setZoomCam(19 + toleran);
       // console.log('19');
       return;
     }
     if (distance >= 0.075) {
-      setZoomCam(20);
+      setZoomCam(20 + toleran);
       // console.log('20');
       return;
     }
     if (distance >= 0.037) {
-      setZoomCam(21);
+      setZoomCam(21 + toleran);
       // console.log('21');
       return;
     }
     if (distance >= 0.019) {
-      setZoomCam(22);
+      setZoomCam(22 + toleran);
       // console.log('22');
       return;
     }
@@ -317,7 +336,7 @@ const Home = ({navigation}) => {
             minZoomLevel={20}
             animationDuration={800}
           />
-          <MapboxGL.ShapeSource id="line1" shape={route.route}>
+          <MapboxGL.ShapeSource id="line1" shape={routeShape.route}>
             <MapboxGL.LineLayer
               id="linelayer1"
               style={{
@@ -339,16 +358,13 @@ const Home = ({navigation}) => {
               />
             </View>
           </MapboxGL.PointAnnotation>
-          <MapboxGL.PointAnnotation coordinate={corcenDest}>
-            <View>
-              <Icon
-                name="map-pin"
-                size={25}
-                color="#FF565D"
-                style={{transform: [{rotate: '60deg'}]}}
-              />
-            </View>
-          </MapboxGL.PointAnnotation>
+          {formGlobal?.LatlonDest && (
+            <MapboxGL.PointAnnotation coordinate={formGlobal?.LatlonDest}>
+              <View>
+                <Icon name="map-marker" size={35} color="#FF565D" />
+              </View>
+            </MapboxGL.PointAnnotation>
+          )}
         </MapboxGL.MapView>
         <View
           style={{
@@ -366,19 +382,32 @@ const Home = ({navigation}) => {
             {!startDriving ? (
               <>
                 <View>
-                  <Text style={{marginBottom: 10}}>Lokasi Saat Ini</Text>
-                  <TextInput
-                    style={{height: 40}}
-                    defaultValue={`${corcenStart[0]}, ${corcenStart[1]}`}
-                  />
+                  <Text style={{marginBottom: 10}}>Tempat Penjemputan</Text>
+                  <View
+                    style={{
+                      height: 40,
+                      backgroundColor: colors.grey2,
+                      borderRadius: 5,
+                      padding: 10,
+                    }}>
+                    <Text>Lokasi saat ini</Text>
+                  </View>
                 </View>
                 <Gap height={10} />
                 <View>
                   <Text style={{marginBottom: 10}}>Tujuan Lokasi</Text>
-                  <TextInput
-                    style={{height: 40}}
-                    defaultValue={`${corcenDest[0]}, ${corcenDest[1]}`}
-                  />
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('MapDest')}
+                    style={{
+                      height: 40,
+                      backgroundColor: colors.grey2,
+                      borderRadius: 5,
+                      padding: 10,
+                    }}>
+                    <Text numberOfLines={1}>
+                      {formGlobal?.NamaDest || 'Pilih lokasi dulu....'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <Gap height={20} />
                 <Button icon="car" mode="contained" onPress={() => btnStart()}>

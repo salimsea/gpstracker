@@ -4,7 +4,7 @@ import {
   createStackNavigator,
 } from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {Home, Intro, User, Gps} from '../pages';
+import {Home, Intro, User, Gps, MapDest} from '../pages';
 import {BottomNavigator} from '../components';
 
 const Stack = createStackNavigator();
@@ -50,6 +50,7 @@ const Routers = () => {
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="User" component={User} />
       <Stack.Screen name="Gps" component={Gps} />
+      <Stack.Screen name="MapDest" component={MapDest} />
     </Stack.Navigator>
   );
 };

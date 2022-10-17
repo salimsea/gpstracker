@@ -5,12 +5,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, {useState} from 'react';
+import React, {useState, useRef} from 'react';
 import MapboxGL from '@rnmapbox/maps';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {colors, fonts} from '../../utils';
 import {Gap} from '../../components';
-import {getStatusBarHeight} from 'react-native-status-bar-height';
 import {Button, TextInput} from 'react-native-paper';
 import axios from 'axios';
 import {useDispatch} from 'react-redux';
@@ -21,12 +20,12 @@ let TOKEN =
 MapboxGL.setAccessToken(TOKEN);
 
 const MapDest = ({navigation}) => {
+  var mapref = useRef(null);
   const dispatch = useDispatch();
   const [titikCenter, setTitikCenter] = useState([
     106.80024559462458, -6.5305088365218324,
   ]);
   const [zoomCam, setZoomCam] = useState(16);
-  const [isLokTujuan, setIsLokTujuan] = useState(false);
   const [lokTujuan, setLokTujuan] = useState([
     106.80024559462458, -6.5305088365218324,
   ]);
@@ -55,10 +54,15 @@ const MapDest = ({navigation}) => {
     setTeksLokTujuan(false);
     setNamaLokTujuan(name);
     setZoomCam(16);
-    setIsLokTujuan(true);
   };
 
-  const btnSet = () => {
+  const setPointCenter = async () => {
+    const center = await mapref?.current?.getCenter();
+    setLokTujuan(center);
+    if (!namaLokTujuan) setNamaLokTujuan(`${center}`);
+  };
+
+  const btnSet = async () => {
     dispatch(setFormGlobal('LatlonDest', lokTujuan));
     dispatch(setFormGlobal('NamaDest', namaLokTujuan));
     navigation.goBack();
@@ -67,30 +71,65 @@ const MapDest = ({navigation}) => {
   return (
     <View style={styles.page}>
       <View style={styles.container}>
-        <View style={{paddingHorizontal: 20, paddingVertical: 20}}>
-          {/* section header */}
+        {/* section map */}
+        <View style={{position: 'relative', width: '100%', height: '80%'}}>
+          <MapboxGL.MapView
+            ref={mapref}
+            style={styles.map}
+            scaleBarEnabled={false}
+            animated
+            attributionEnabled={false}
+            logoEnabled={false}
+            rotateEnabled={false}
+            onRegionDidChange={() => setPointCenter()}
+            regionWillChangeDebounceTime={1}
+            regionDidChangeDebounceTime={1}
+            showUserLocation={true}>
+            <MapboxGL.Camera
+              zoomLevel={zoomCam}
+              centerCoordinate={titikCenter}
+              animationMode="easeTo"
+              minZoomLevel={20}
+              animationDuration={1000}
+              onUserTrackingModeChange={() => console.log('s')}
+            />
+          </MapboxGL.MapView>
           <View
             style={{
-              flexDirection: 'row',
-              alignItems: 'center',
+              position: 'absolute',
+              top: '47%',
+              right: '45.5%',
             }}>
-            <View>
-              <Icon name="arrow-left-thin" size={30} color="#000" />
-            </View>
-            <View style={{paddingLeft: 10}}>
-              <Text
-                style={{
-                  fontFamily: fonts.primary[600],
-                  color: '#000',
-                  fontSize: 16,
-                }}>
-                Tujuan Lokasi
-              </Text>
-            </View>
+            <Icon name="map-marker" size={35} color="#FF565D" />
           </View>
-          {/* section search */}
-          <View style={{paddingTop: 15}}>
-            <Text style={{paddingBottom: 10}}>Cari Lokasi :</Text>
+        </View>
+
+        {/* section header */}
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{
+            position: 'absolute',
+            top: 20,
+            left: 20,
+            backgroundColor: colors.white,
+            borderRadius: 30,
+            padding: 10,
+          }}>
+          <View>
+            <Icon name="arrow-left-thin" size={30} color={colors.black} />
+          </View>
+        </TouchableOpacity>
+
+        {/* section search */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingVertical: 20,
+          }}>
+          <View>
+            <Text style={{paddingBottom: 10, color: colors.black}}>
+              Cari Lokasi :
+            </Text>
             <TextInput
               style={{height: 40}}
               placeholder="Ketikkan Alamat..."
@@ -99,7 +138,7 @@ const MapDest = ({navigation}) => {
             />
             {teksLokTujuan ? (
               <>
-                <Text style={{fontSize: 13, color: '#000', top: 5}}>
+                <Text style={{fontSize: 13, color: colors.black, top: 5}}>
                   Result Pencarian :
                 </Text>
                 <ScrollView
@@ -143,33 +182,6 @@ const MapDest = ({navigation}) => {
             </Button>
           </View>
         </View>
-
-        {/* section map */}
-        <MapboxGL.MapView
-          style={styles.map}
-          scaleBarEnabled={false}
-          animated
-          logoEnabled={false}
-          compassEnabled
-          compassPosition={{top: 10, right: 8}}>
-          <MapboxGL.Camera
-            zoomLevel={zoomCam}
-            centerCoordinate={titikCenter}
-            animationMode="easeTo"
-            minZoomLevel={20}
-            animationDuration={1000}
-          />
-          <MapboxGL.PointAnnotation coordinate={lokTujuan}>
-            <View>
-              <Icon
-                name="map-marker"
-                size={35}
-                color="#FF565D"
-                style={{transform: [{rotate: '60deg'}]}}
-              />
-            </View>
-          </MapboxGL.PointAnnotation>
-        </MapboxGL.MapView>
       </View>
     </View>
   );
@@ -182,7 +194,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: colors.white,
   },
   container: {
     height: '100%',

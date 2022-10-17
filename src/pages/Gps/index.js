@@ -1,7 +1,7 @@
 import {StyleSheet, Text, View, Image} from 'react-native';
 import React, {useState} from 'react';
 import {Button, Switch} from 'react-native-paper';
-import {fonts} from '../../utils';
+import {colors, fonts} from '../../utils';
 import {Gap} from '../../components';
 import Geolocation from 'react-native-geolocation-service';
 import notifee, {AndroidColor, AndroidImportance} from '@notifee/react-native';
@@ -93,6 +93,7 @@ const Gps = ({navigation}) => {
           justifyContent: 'center',
           alignItems: 'center',
           paddingHorizontal: 20,
+          backgroundColor: colors.white,
         }}>
         <View style={{alignItems: 'center'}}>
           <Icon

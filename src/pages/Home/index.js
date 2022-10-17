@@ -138,12 +138,6 @@ const Home = ({navigation, route}) => {
   const btnStop = async () => {
     setStartDriving(false);
     await notifee.stopForegroundService();
-    // setRouteShape({
-    //   route: {
-    //     type: 'FeatureCollection',
-    //     features: [],
-    //   },
-    // });
     btnDirection(corcenStart, formGlobal?.LatlonDest, false);
   };
 
@@ -202,11 +196,6 @@ const Home = ({navigation, route}) => {
       // console.log('0');
       return;
     }
-    // if (distance >= 64000.742) {
-    //   setZoomCam(10 + (toleran != 0 && toleran + 7));
-    //   // console.log('1');
-    //   return;
-    // }
     if (distance >= 39135.742) {
       setZoomCam(9 + (toleran != 0 && toleran + 8));
       // console.log('1');
@@ -328,6 +317,8 @@ const Home = ({navigation, route}) => {
           animated
           logoEnabled={false}
           compassEnabled
+          rotateEnabled={false}
+          attributionEnabled={false}
           compassPosition={{top: 10, right: 8}}>
           <MapboxGL.Camera
             zoomLevel={zoomCam}

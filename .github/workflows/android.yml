@@ -1,5 +1,10 @@
 name: Android
 
+on:
+  push:
+    branchs:
+      - master
+
 jobs:
   check:
     runs-on: ubuntu-20.04

@@ -32,6 +32,10 @@ jobs:
           npm i
           fi
       - run: npx jetifier
+
+      - name: Uninstall 31.0.0 Build tool
+        run: $ANDROID_SDK_ROOT/tools/bin/sdkmanager --uninstall 'build-tools;31.0.0'
+
       - run: ./gradlew assembleRelease
         working-directory: android
         name: Build Android apk (debug)
